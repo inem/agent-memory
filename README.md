@@ -189,6 +189,26 @@ instead if you would rather not spend it. Codex asks you to trust new hooks once
 shell command needs neither: the CLI is the universal fallback, and it is the wider surface —
 `context`, `sleep`, and the proposal ledger have no MCP tool yet.
 
+### Import from TAP session files
+
+Point at the output directory of TAP's `chatgpt.sessions` pack:
+
+```bash
+mem sync-tap-sessions /path/to/profile/data/readers/chatgpt.sessions
+mem distill
+```
+
+The importer reads the pack's latest-version pointers, records visible user and
+final assistant messages through the normal raw archive, and remembers node IDs
+and text hashes in its own state. Repeating a run skips unchanged messages.
+When a previously seen node changes, disappears, or moves off the active branch,
+it reports the conversation under `divergent` and leaves its archive unchanged.
+Review such conversations before distilling their old material. The pack's
+versioned JSON remains the source for alternate branches and omitted content.
+This command handles ChatGPT web sessions only. It is an explicit sync command;
+the [TAP command pack](integrations/tap-memory/README.md) schedules it through
+TAP's background host for automatic import.
+
 ## Let it sleep
 
 ```bash

@@ -1,0 +1,29 @@
+{
+  "id": "agent-memory.sessions",
+  "version": "0.1.0",
+  "intent": "Archive new ChatGPT session messages into agent-memory from TAP's session pack output",
+  "license": "MIT",
+  "files": ["command.py", "LICENSE"],
+  "entrypoints": {
+    "command": {
+      "file": "command.py",
+      "interface": "process-argv-v1",
+      "runtime": "host-python",
+      "commands": [{
+        "path": ["memory", "sync"],
+        "summary": "Archive new ChatGPT session messages",
+        "usage": "(no arguments)",
+        "profile": "required",
+        "schedule": {"interval_seconds": 120, "timeout_seconds": 300}
+      }]
+    }
+  },
+  "config": {
+    "mem-bin": {"type": "string", "default": ""},
+    "memory-store": {"type": "string", "default": ""}
+  },
+  "access": {
+    "origins": ["https://chatgpt.com"],
+    "capabilities": ["command.execute", "background.run"]
+  }
+}

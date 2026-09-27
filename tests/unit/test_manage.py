@@ -73,6 +73,7 @@ def test_exact_duplicates_are_merged_by_supersede_not_by_deletion(seeded):
         abstract=original.abstract,
         type=original.type,
         body=original.body,
+        fields=dict(original.fields),
         name="file-truth-invariant-copy",
     )
     report = Manage(seeded).sleep()
@@ -80,6 +81,24 @@ def test_exact_duplicates_are_merged_by_supersede_not_by_deletion(seeded):
     copy = seeded.find("file-truth-invariant-copy")
     assert copy is not None
     assert copy.superseded_by == "file-truth-invariant"
+
+
+def test_russian_memories_with_distinct_meanings_remain_active(store):
+    store.record(
+        type="fact", name="coffee", abstract="Предпочитаю кофе без молока", body="Пью утром"
+    )
+    store.record(
+        type="fact", name="server", abstract="Сервер находится в Белграде", body="Работает ночью"
+    )
+    Manage(store).sleep()
+    assert len([record for record in store.records() if record.is_active()]) == 2
+
+
+def test_word_order_and_fields_are_part_of_exact_duplicate_identity(store):
+    store.record(type="fact", name="cat", fields={"subject": "one"}, abstract="Кошка кусает собаку")
+    store.record(type="fact", name="dog", fields={"subject": "two"}, abstract="Собака кусает кошку")
+    Manage(store).sleep()
+    assert len([record for record in store.records() if record.is_active()]) == 2
 
 
 def test_records_that_keep_surfacing_together_grow_links_between_them(seeded):
@@ -284,6 +303,26 @@ def test_accepting_a_supersede_keeps_the_richer_entry(seeded):
     Manage(seeded).decide(proposal.id, accept=True)
     assert seeded.find(rich).is_active()
     assert seeded.find(thin).superseded_by == rich
+
+
+def test_newer_short_correction_wins_over_older_long_description(store, clock):
+    store.record(
+        type="fact",
+        name="older",
+        abstract="The nightly server export job times out against the reporting replica",
+        body="An older and much longer description of the server location and its history.",
+    )
+    clock.advance(seconds=1)
+    store.record(
+        type="fact",
+        name="newer",
+        abstract="The nightly server export job times out against the reporting replica again",
+        body="Fixed.",
+    )
+    proposal = _find(Manage(store).proposals(), PROPOSAL_SUPERSEDE)
+    Manage(store).decide(proposal.id, accept=True)
+    assert store.find("newer").is_active()
+    assert store.find("older").superseded_by == "newer"
 
 
 def test_accepting_a_supersede_loses_no_file(seeded):

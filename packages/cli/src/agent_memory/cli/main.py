@@ -9,6 +9,7 @@ import pathlib
 import sys
 from collections.abc import Sequence
 
+from agent_memory.adapters import tap_sessions
 from agent_memory.core import context as context_module
 from agent_memory.core import distill as distill_module
 from agent_memory.core import migrate as migrate_module
@@ -235,7 +236,15 @@ def _parser() -> argparse.ArgumentParser:
     installer.add_argument("--settings", default=None)
     installer.set_defaults(handler=_setup)
 
+    tap_reader = subparsers.add_parser("sync-tap-sessions", help="archive TAP ChatGPT sessions")
+    tap_reader.add_argument("source", help="TAP chatgpt.sessions output directory")
+    tap_reader.set_defaults(handler=_sync_tap_sessions)
+
     return parser
+
+
+def _sync_tap_sessions(store: Store, args: argparse.Namespace) -> dict[str, object]:
+    return tap_sessions.sync(store, pathlib.Path(args.source).expanduser())
 
 
 def _init(store: Store, args: argparse.Namespace) -> dict[str, object]:

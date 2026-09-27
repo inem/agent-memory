@@ -16,6 +16,7 @@ import hashlib
 import pathlib
 import re
 import subprocess
+import unicodedata
 
 from . import reasoning, timestamp
 from . import record as record_module
@@ -46,7 +47,7 @@ REPORT_SUFFIX = ".md"
 MERGED_SUFFIX = "-merged"
 SECTION_PREFIX = "## "
 GIT = "git"
-_WORDS = re.compile(r"[0-9a-z]+")
+_WORDS = re.compile(r"[^\W_]+", re.UNICODE)
 _STOPWORDS = frozenset(
     {"the", "a", "an", "and", "or", "of", "to", "is", "are", "for", "in", "on", "with", "that"}
 )
@@ -264,7 +265,7 @@ class Manage:
 
     def _supersede(self, proposal: Proposal) -> str:
         entries = [self._entry(name) for name in proposal.targets]
-        keeper = max(entries, key=lambda record: (len(record.body), record.created, record.name))
+        keeper = max(entries, key=lambda record: (record.created, record.name))
         for record in entries:
             if record.name == keeper.name:
                 continue
@@ -711,7 +712,17 @@ def _similarity(left: MemoryRecord, right: MemoryRecord) -> float:
 
 
 def _fingerprint(record: MemoryRecord) -> str:
-    return " ".join(sorted(_tokens(record.abstract))) + "|" + " ".join(sorted(_tokens(record.body)))
+    def normalise(value: str) -> str:
+        return " ".join(unicodedata.normalize("NFC", value).casefold().split())
+
+    return repr(
+        (
+            record.type,
+            sorted(record.fields.items()),
+            normalise(record.abstract),
+            normalise(record.body),
+        )
+    )
 
 
 def _group_key(group: str) -> str:
